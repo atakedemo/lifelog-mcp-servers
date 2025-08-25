@@ -1,103 +1,137 @@
-import Image from "next/image";
+"use client";
+
+import { generateClient } from "aws-amplify/data";
+import type { Schema } from "@/amplify/data/resource";
+import { Amplify } from "aws-amplify";
+import { Authenticator } from "@aws-amplify/ui-react";
+import "@aws-amplify/ui-react/styles.css";
+import outputs from "@/amplify_outputs.json";
+import { useEffect, useState } from "react";
+
+Amplify.configure(outputs);
+
+const client = generateClient<Schema>();
+
+type TodoFormProps = {
+  todo: Schema["Todo"]["type"];
+  handleUpdate: (string: string) => void;
+  handleDelete: () => void;
+};
+
+const TodoForm = ({ todo, handleUpdate, handleDelete }: TodoFormProps) => {
+  const [input, setInput] = useState<string>("");
+
+  useEffect(() => {
+    setInput(todo.content || "");
+  }, [todo.content]);
+
+  return (
+    <div className="flex flex-col gap-2 w-full max-w-md">
+      <input
+        type="text"
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        className="border border-gray-300 rounded px-3 py-2 w-full"
+      />
+      <div className="flex gap-2">
+        <button
+          onClick={() => handleUpdate(input)}
+          className="border-[1px] border-gray-500 px-3 py-1 rounded hover:bg-gray-100"
+        >
+          更新
+        </button>
+        <button
+          onClick={handleDelete}
+          className="border-[1px] border-gray-500 px-3 py-1 rounded hover:bg-gray-100"
+        >
+          削除
+        </button>
+      </div>
+    </div>
+  );
+};
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [todos, setTodos] = useState<Schema["Todo"]["type"][]>([]);
+  const [input, setInput] = useState<string>("");
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+  const handleGetTodos = async () => {
+    const { data: todos } = await client.models.Todo.list();
+    setTodos(todos);
+  };
+
+  const handleCreate = async () => {
+    await client.models.Todo.create({
+      content: input,
+    });
+    setInput("");
+    await handleGetTodos();
+  };
+
+  const handleDelete = async (id: string) => {
+    await client.models.Todo.delete({
+      id,
+    });
+    handleGetTodos();
+  };
+
+  const handleUpdate = async (id: string, content: string) => {
+    await client.models.Todo.update({
+      id,
+      content,
+    });
+  };
+
+  useEffect(() => {
+    (async () => {
+      await handleGetTodos();
+    })();
+  }, []);
+
+  return (
+    <Authenticator>
+    {({ signOut, user }) => (
+      <div className="font-sans min-h-screen p-8 pb-20 sm:p-20">
+        <main className="max-w-2xl mx-auto flex flex-col gap-8">
+          <h1 className="text-2xl font-bold text-center mb-4">ToDo リスト</h1>
+          <h1>Hello {user?.username}</h1>
+          <div className="flex gap-2 justify-center">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="新しいToDoを入力"
+              className="border border-gray-300 rounded px-3 py-2 w-full max-w-md"
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+            <button
+              onClick={handleCreate}
+              className="border-[1px] border-gray-500 px-4 py-2 rounded hover:bg-gray-100 whitespace-nowrap"
+            >
+              追加
+            </button>
+          </div>
+          <div className="flex flex-col gap-4">
+            {todos.map((todo) => {
+              return (
+                <div key={todo.id} className="border border-gray-200 rounded p-4 bg-white shadow-sm">
+                  <TodoForm
+                    todo={todo}
+                    handleUpdate={(content) => handleUpdate(todo.id, content)}
+                    handleDelete={() => handleDelete(todo.id)}
+                  />
+                </div>
+              );
+            })}
+          </div>
+          {todos.length === 0 && (
+            <p className="text-center text-gray-500 mt-8">ToDo項目がありません。新しいToDoを追加してください。</p>
+          )}
+        </main>
+        <footer className="mt-16 text-center text-gray-500">
+            <button onClick={signOut}>Sign Out</button>
+        </footer>
+      </div>
+    )}
+    </Authenticator>
   );
 }
