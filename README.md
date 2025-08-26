@@ -40,5 +40,6 @@ frontend:
 ### XX
 
 ```bash
-npm install @aws-amplify/ui-react
+npm install @aws-amplify/ui-react @aws-sdk/lib-dynamodb @aws-sdk/client-dynamodb jsonwebtoken @types/jsonwebtoken
+
 ```
