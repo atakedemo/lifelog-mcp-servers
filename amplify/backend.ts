@@ -9,24 +9,84 @@ import {
   HttpUserPoolAuthorizer,
 } from "aws-cdk-lib/aws-apigatewayv2-authorizers";
 import { HttpLambdaIntegration } from "aws-cdk-lib/aws-apigatewayv2-integrations";
+import { Function, Runtime, Code } from "aws-cdk-lib/aws-lambda";
+import { Duration } from "aws-cdk-lib";
+import { Construct } from "constructs";
 
 import { auth } from './auth/resource';
 import { data } from './data/resource';
-import { 
-  mcpServerFunction, 
-  resourceMetadataHandlerFunction,
-  authorizationServerHandlerFunction
-} from './function/mcp-server/resource';
 
 /**
  * @see https://docs.amplify.aws/react/build-a-backend/ to add storage, functions, and more
  */
-const backendBase = defineBackend({
+const backend = defineBackend({
   auth,
   data,
 });
+
 // create a new API stack
-const apiStack = backendBase.createStack("api-stack");
+const apiStack = backend.createStack("api-stack");
+
+// Create Lambda functions directly with CDK
+const mcpServerLambda = new Function(apiStack, "McpServerFunction", {
+  runtime: Runtime.NODEJS_20_X,
+  handler: "mcp-handler.handler",
+  code: Code.fromAsset("./function/mcp-server", {
+    bundling: {
+      image: Runtime.NODEJS_20_X.bundlingImage,
+      command: [
+        'bash', '-c',
+        'npm install && npm run build && cp -r dist/* /asset-output/'
+      ],
+    },
+  }),
+  timeout: Duration.seconds(30),
+  memorySize: 512,
+  environment: {
+    BASE_URL: `https://${apiStack.stackName}.execute-api.ap-northeast-1.amazonaws.com`,
+    COGNITO_DOMAIN_URL: `https://cognito-idp.ap-northeast-1.amazonaws.com/${backend.auth.resources.userPool.userPoolId}`,
+  },
+});
+
+const resourceMetadataLambda = new Function(apiStack, "ResourceMetadataFunction", {
+  runtime: Runtime.NODEJS_20_X,
+  handler: "resource-metadata-handler.handler",
+  code: Code.fromAsset("./function/mcp-server", {
+    bundling: {
+      image: Runtime.NODEJS_20_X.bundlingImage,
+      command: [
+        'bash', '-c',
+        'npm install && npm run build && cp -r dist/* /asset-output/'
+      ],
+    },
+  }),
+  timeout: Duration.seconds(30),
+  memorySize: 512,
+  environment: {
+    BASE_URL: `https://${apiStack.stackName}.execute-api.ap-northeast-1.amazonaws.com`,
+    AUTH_SERVER_URL: `https://cognito-idp.ap-northeast-1.amazonaws.com/${backend.auth.resources.userPool.userPoolId}/.well-known/oauth-authorization-server`,
+  },
+});
+
+const authorizationServerLambda = new Function(apiStack, "AuthorizationServerFunction", {
+  runtime: Runtime.NODEJS_20_X,
+  handler: "authorization-server-handler.handler",
+  code: Code.fromAsset("./function/mcp-server", {
+    bundling: {
+      image: Runtime.NODEJS_20_X.bundlingImage,
+      command: [
+        'bash', '-c',
+        'npm install && npm run build && cp -r dist/* /asset-output/'
+      ],
+    },
+  }),
+  timeout: Duration.seconds(30),
+  memorySize: 512,
+  environment: {
+    AUTH_SERVER_URL: `https://cognito-idp.ap-northeast-1.amazonaws.com/${backend.auth.resources.userPool.userPoolId}/.well-known/oauth-authorization-server`,
+  },
+});
+
 const httpApi = new HttpApi(apiStack, "HttpApi", {
   apiName: "mcp-server-http",
   corsPreflight: {
@@ -42,36 +102,22 @@ const httpApi = new HttpApi(apiStack, "HttpApi", {
   createDefaultStage: true,
 });
 
-const backendFunctions = defineBackend({
-  mcpServerFunction: mcpServerFunction(
-    `https://cognito-idp.ap-northeast-1.amazonaws.com/${backendBase.auth.resources.userPool.userPoolId}/.well-known/jwks.json`
-  ),
-  resourceMetadataHandlerFunction: resourceMetadataHandlerFunction(
-    `https://cognito-idp.ap-northeast-1.amazonaws.com/${backendBase.auth.resources.userPool.userPoolId}/.well-known/jwks.json`, 
-    `https://cognito-idp.ap-northeast-1.amazonaws.com/${backendBase.auth.resources.userPool.userPoolId}/.well-known/oauth-authorization-server`
-  ),
-  authorizationServerHandlerFunction: authorizationServerHandlerFunction(
-    `https://cognito-idp.ap-northeast-1.amazonaws.com/${backendBase.auth.resources.userPool.userPoolId}/.well-known/oauth-authorization-server`
-  ),
-})
-
 // MCP Server(/mcp)
 const httpLambdaIntegrationMcp = new HttpLambdaIntegration(
   "LambdaIntegration",
-  backendFunctions.mcpServerFunction.resources.lambda
+  mcpServerLambda
 );
 
 httpApi.addRoutes({
   path: "/mcp",
   methods: [HttpMethod.POST],
   integration: httpLambdaIntegrationMcp,
-  // authorizer: iamAuthorizer,
 });
 
 // Resource Metadata(/resource-metadata)
 const httpLambdaIntegrationResourceMetadata = new HttpLambdaIntegration(
   "LambdaIntegrationResourceMetadata",
-  backendFunctions.resourceMetadataHandlerFunction.resources.lambda
+  resourceMetadataLambda
 );
 
 httpApi.addRoutes({
@@ -83,7 +129,7 @@ httpApi.addRoutes({
 // Authorization Server(/authorization-server)
 const httpLambdaIntegrationAuthorizationServer = new HttpLambdaIntegration(
   "LambdaIntegrationAuthorizationServer",
-  backendFunctions.authorizationServerHandlerFunction.resources.lambda
+  authorizationServerLambda
 );
 
 httpApi.addRoutes({

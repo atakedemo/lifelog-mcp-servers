@@ -2,11 +2,14 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
 export class ResourceMetadataHandler {
-    static async handle(event: APIGatewayProxyEvent, baseUrl: string, genericAuthServerUrl: string): Promise<APIGatewayProxyResult> {
+    static async handle(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+        const baseUrl = process.env.BASE_URL || '';
+        const authServerUrl = process.env.AUTH_SERVER_URL || '';
+        
         const response = {
             resource: baseUrl,
             authorization_servers: [
-                genericAuthServerUrl
+                authServerUrl
             ],
             bearer_methods_supported: [
             "header"
@@ -27,3 +30,8 @@ export class ResourceMetadataHandler {
         };   
     }
 }
+
+// Lambda function entry point
+export const handler = async (event: any) => {
+    return ResourceMetadataHandler.handle(event);
+};

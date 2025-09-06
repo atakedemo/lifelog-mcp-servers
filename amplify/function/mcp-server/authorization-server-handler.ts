@@ -9,7 +9,7 @@ export class AuthorizationServerHandler {
             
             // Cognito uses OpenID Connect configuration, not OAuth authorization server endpoint
             // Convert the configured auth server URL to the correct OpenID configuration endpoint
-            let cognitoMetadataUrl = process.env.authServerUrl || '';
+            let cognitoMetadataUrl = process.env.AUTH_SERVER_URL || '';
             
             // If the configured URL points to oauth-authorization-server, change it to openid-configuration
             if (cognitoMetadataUrl.includes('/.well-known/oauth-authorization-server')) {
@@ -48,3 +48,8 @@ export class AuthorizationServerHandler {
         }
     }
 }
+
+// Lambda function entry point
+export const handler = async (event: any) => {
+    return AuthorizationServerHandler.handle(event);
+};

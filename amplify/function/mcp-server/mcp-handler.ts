@@ -94,3 +94,8 @@ export class McpHandler {
     };
   }
 }
+
+// Lambda function entry point
+export const handler = async (event: any) => {
+  return McpHandler.handle(event);
+};
