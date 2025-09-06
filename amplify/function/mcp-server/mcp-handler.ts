@@ -3,17 +3,17 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, GetCommand } from '@aws-sdk/lib-dynamodb';
 import { JwtVerifier } from './jwt-verifier';
-import { config } from '../config';
 
 const dynamoClient = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(dynamoClient);
-const unAuthorizedHeader = {
-  'Content-Type': 'application/json',
-  'WWW-Authenticate': `Bearer resource_metadata="${config.baseUrl}/.well-known/oauth-protected-resource"`
-}
 
 export class McpHandler {
   static async handle(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+    const unAuthorizedHeader = {
+      'Content-Type': 'application/json',
+      'WWW-Authenticate': `Bearer resource_metadata="${process.env.BASE_URL}/.well-known/oauth-protected-resource"`
+    }
+
     try {
       // Authorization headerからトークンを取得
       const authHeader = event.headers.Authorization || event.headers.authorization;

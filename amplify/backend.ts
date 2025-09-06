@@ -12,8 +12,11 @@ import { HttpLambdaIntegration } from "aws-cdk-lib/aws-apigatewayv2-integrations
 
 import { auth } from './auth/resource';
 import { data } from './data/resource';
-import { mcpServerFunction, resourceMetadataHandlerFunction } from './function/mcp-server/resource';
-// import { resourceMetadataHandlerFunction } from './function/mcp-server/resource-metadata-handler';
+import { 
+  mcpServerFunction, 
+  resourceMetadataHandlerFunction,
+  authorizationServerHandlerFunction
+} from './function/mcp-server/resource';
 
 /**
  * @see https://docs.amplify.aws/react/build-a-backend/ to add storage, functions, and more
@@ -40,8 +43,16 @@ const httpApi = new HttpApi(apiStack, "HttpApi", {
 });
 
 const backendFunctions = defineBackend({
-  mcpServerFunction: mcpServerFunction(`https://cognito-idp.ap-northeast-1.amazonaws.com/${backendBase.auth.resources.userPool.userPoolId}/.well-known/jwks.json`),
-  resourceMetadataHandlerFunction: resourceMetadataHandlerFunction,
+  mcpServerFunction: mcpServerFunction(
+    `https://cognito-idp.ap-northeast-1.amazonaws.com/${backendBase.auth.resources.userPool.userPoolId}/.well-known/jwks.json`
+  ),
+  resourceMetadataHandlerFunction: resourceMetadataHandlerFunction(
+    `https://cognito-idp.ap-northeast-1.amazonaws.com/${backendBase.auth.resources.userPool.userPoolId}/.well-known/jwks.json`, 
+    `https://cognito-idp.ap-northeast-1.amazonaws.com/${backendBase.auth.resources.userPool.userPoolId}/.well-known/oauth-authorization-server`
+  ),
+  authorizationServerHandlerFunction: authorizationServerHandlerFunction(
+    `https://cognito-idp.ap-northeast-1.amazonaws.com/${backendBase.auth.resources.userPool.userPoolId}/.well-known/oauth-authorization-server`
+  ),
 })
 
 const httpLambdaIntegration = new HttpLambdaIntegration(

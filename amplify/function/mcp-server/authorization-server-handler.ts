@@ -1,8 +1,7 @@
 // lambda/resource-metadata-handler.ts
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';// import { config } from '../config/';
-import { config } from '../config';
 
-export class ResourceMetadataHandler {
+export class AuthorizationServerHandler {
     static async handle(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
         try {
             // Proxy request to the actual Cognito authorization server metadata
@@ -10,7 +9,7 @@ export class ResourceMetadataHandler {
             
             // Cognito uses OpenID Connect configuration, not OAuth authorization server endpoint
             // Convert the configured auth server URL to the correct OpenID configuration endpoint
-            let cognitoMetadataUrl = config.cognito.authServerUrl;
+            let cognitoMetadataUrl = process.env.authServerUrl || '';
             
             // If the configured URL points to oauth-authorization-server, change it to openid-configuration
             if (cognitoMetadataUrl.includes('/.well-known/oauth-authorization-server')) {

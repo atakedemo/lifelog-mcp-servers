@@ -1,13 +1,12 @@
 // lambda/resource-metadata-handler.ts
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { config } from '../config';
 
 export class ResourceMetadataHandler {
-    static async handle(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+    static async handle(event: APIGatewayProxyEvent, baseUrl: string, genericAuthServerUrl: string): Promise<APIGatewayProxyResult> {
         const response = {
-            resource: config.baseUrl,
+            resource: baseUrl,
             authorization_servers: [
-                config.genericAuthServerUrl
+                genericAuthServerUrl
             ],
             bearer_methods_supported: [
             "header"
@@ -19,7 +18,7 @@ export class ResourceMetadataHandler {
                 "mcp-api/read",
                 "mcp-api/write"
             ],
-            resource_documentation: `${config.baseUrl}/docs`
+            resource_documentation: `${baseUrl}/docs`
         }
         return {
             statusCode: 200,
