@@ -3,9 +3,14 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, GetCommand } from '@aws-sdk/lib-dynamodb';
 import { JwtVerifier } from './jwt-verifier';
+import { config } from '../config'
 
 const dynamoClient = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(dynamoClient);
+const unAuthorizedHeader = {
+  'Content-Type': 'application/json',
+  'WWW-Authenticate': `Bearer resource_metadata="${config.baseUrl}/.well-known/oauth-protected-resource"`
+}
 
 export class McpHandler {
   static async handle(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
@@ -15,7 +20,7 @@ export class McpHandler {
       if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return {
           statusCode: 401,
-          headers: { 'Content-Type': 'application/json' },
+          headers: unAuthorizedHeader,
           body: JSON.stringify({ error: 'Unauthorized' }),
         };
       }
@@ -27,7 +32,7 @@ export class McpHandler {
       if (!payload) {
         return {
           statusCode: 401,
-          headers: { 'Content-Type': 'application/json' },
+          headers: unAuthorizedHeader,
           body: JSON.stringify({ error: 'Invalid token' }),
         };
       }
@@ -38,7 +43,7 @@ export class McpHandler {
       if (!client) {
         return {
           statusCode: 401,
-          headers: { 'Content-Type': 'application/json' },
+          headers: unAuthorizedHeader,
           body: JSON.stringify({ error: 'Client not found' }),
         };
       }

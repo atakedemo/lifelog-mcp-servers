@@ -12,19 +12,18 @@ import { HttpLambdaIntegration } from "aws-cdk-lib/aws-apigatewayv2-integrations
 
 import { auth } from './auth/resource';
 import { data } from './data/resource';
-import { mcpServerFunction } from './function/mcp-server/resource';
+import { mcpServerFunction, resourceMetadataHandlerFunction } from './function/mcp-server/resource';
+// import { resourceMetadataHandlerFunction } from './function/mcp-server/resource-metadata-handler';
 
 /**
  * @see https://docs.amplify.aws/react/build-a-backend/ to add storage, functions, and more
  */
-const backend = defineBackend({
+const backendBase = defineBackend({
   auth,
   data,
-  mcpServerFunction,
 });
-
 // create a new API stack
-const apiStack = backend.createStack("api-stack");
+const apiStack = backendBase.createStack("api-stack");
 const httpApi = new HttpApi(apiStack, "HttpApi", {
   apiName: "mcp-server-http",
   corsPreflight: {
@@ -40,9 +39,14 @@ const httpApi = new HttpApi(apiStack, "HttpApi", {
   createDefaultStage: true,
 });
 
+const backendFunctions = defineBackend({
+  mcpServerFunction: mcpServerFunction(`https://cognito-idp.ap-northeast-1.amazonaws.com/${backendBase.auth.resources.userPool.userPoolId}/.well-known/jwks.json`),
+  resourceMetadataHandlerFunction: resourceMetadataHandlerFunction,
+})
+
 const httpLambdaIntegration = new HttpLambdaIntegration(
   "LambdaIntegration",
-  backend.mcpServerFunction.resources.lambda
+  backendFunctions.mcpServerFunction.resources.lambda
 );
 
 httpApi.addRoutes({
