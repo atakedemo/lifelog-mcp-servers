@@ -1,6 +1,6 @@
 // lambda/resource-metadata-handler.ts
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { config } from '../config/';
+import { config } from '../config';
 
 export class ResourceMetadataHandler {
     static async handle(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
