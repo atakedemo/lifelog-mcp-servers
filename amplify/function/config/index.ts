@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 // Helper function to extract domain prefix
-function extractCognitoDomainPrefix(domainUrl) {
+function extractCognitoDomainPrefix(domainUrl: string) {
     // Remove protocol and .auth.region.amazoncognito.com
     const urlWithoutProtocol = domainUrl.replace(/^https?:\/\//, '');
     const domainPrefix = urlWithoutProtocol.split('.')[0];
