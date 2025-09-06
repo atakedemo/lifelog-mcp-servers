@@ -55,7 +55,8 @@ const backendFunctions = defineBackend({
   ),
 })
 
-const httpLambdaIntegration = new HttpLambdaIntegration(
+// MCP Server(/mcp)
+const httpLambdaIntegrationMcp = new HttpLambdaIntegration(
   "LambdaIntegration",
   backendFunctions.mcpServerFunction.resources.lambda
 );
@@ -63,7 +64,30 @@ const httpLambdaIntegration = new HttpLambdaIntegration(
 httpApi.addRoutes({
   path: "/mcp",
   methods: [HttpMethod.POST],
-  integration: httpLambdaIntegration,
+  integration: httpLambdaIntegrationMcp,
   // authorizer: iamAuthorizer,
 });
 
+// Resource Metadata(/resource-metadata)
+const httpLambdaIntegrationResourceMetadata = new HttpLambdaIntegration(
+  "LambdaIntegrationResourceMetadata",
+  backendFunctions.resourceMetadataHandlerFunction.resources.lambda
+);
+
+httpApi.addRoutes({
+  path: "/.well-known/oauth-protected-resource",
+  methods: [HttpMethod.GET],
+  integration: httpLambdaIntegrationResourceMetadata,
+});
+
+// Authorization Server(/authorization-server)
+const httpLambdaIntegrationAuthorizationServer = new HttpLambdaIntegration(
+  "LambdaIntegrationAuthorizationServer",
+  backendFunctions.authorizationServerHandlerFunction.resources.lambda
+);
+
+httpApi.addRoutes({
+  path: "/.well-known/oauth-authorization-server",
+  methods: [HttpMethod.GET],
+  integration: httpLambdaIntegrationAuthorizationServer,
+});
