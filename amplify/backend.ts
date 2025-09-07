@@ -47,7 +47,6 @@ const resourceMetadataLambda = new Function(apiStack, "ResourceMetadataFunction"
   memorySize: 512,
   environment: {
     BASE_URL: `https://${apiStack.stackName}.execute-api.ap-northeast-1.amazonaws.com`,
-    AUTH_SERVER_URL: `https://cognito-idp.ap-northeast-1.amazonaws.com/${backend.auth.resources.userPool.userPoolId}/.well-known/oauth-authorization-server`,
   },
 });
 
@@ -58,7 +57,9 @@ const authorizationServerLambda = new Function(apiStack, "AuthorizationServerFun
   timeout: Duration.seconds(30),
   memorySize: 512,
   environment: {
-    AUTH_SERVER_URL: `https://cognito-idp.ap-northeast-1.amazonaws.com/${backend.auth.resources.userPool.userPoolId}/.well-known/oauth-authorization-server`,
+    BASE_URL: `https://${apiStack.stackName}.execute-api.ap-northeast-1.amazonaws.com`,
+    AWS_REGION: "ap-northeast-1",
+    COGNITO_USER_POOL_ID: backend.auth.resources.userPool.userPoolId,
   },
 });
 

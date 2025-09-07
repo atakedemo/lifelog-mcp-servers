@@ -4,16 +4,12 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 export class ResourceMetadataHandler {
     static async handle(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
         const baseUrl = process.env.BASE_URL || '';
-        const authServerUrl = process.env.AUTH_SERVER_URL || '';
+        // const authServerUrl = process.env.AUTH_SERVER_URL || '';
         
         const response = {
             resource: baseUrl,
-            authorization_servers: [
-                authServerUrl
-            ],
-            bearer_methods_supported: [
-            "header"
-            ],
+            authorization_servers: [baseUrl],
+            bearer_methods_supported: ["header"],
             scopes_supported: [
                 "openid",
                 "profile", 
@@ -21,6 +17,7 @@ export class ResourceMetadataHandler {
                 "mcp-api/read",
                 "mcp-api/write"
             ],
+            resource_signing_alg_values_supported: ['RS256', 'ES256'],
             resource_documentation: `${baseUrl}/docs`
         }
         return {
