@@ -30,15 +30,7 @@ const apiStack = backend.createStack("api-stack");
 const mcpServerLambda = new Function(apiStack, "McpServerFunction", {
   runtime: Runtime.NODEJS_20_X,
   handler: "mcp-handler.handler",
-  code: Code.fromAsset("amplify/function/mcp-server", {
-    bundling: {
-      image: Runtime.NODEJS_20_X.bundlingImage,
-      command: [
-        'bash', '-c',
-        'npm install && cp -r . /asset-output/'
-      ],
-    },
-  }),
+  code: Code.fromAsset("amplify/function/mcp-server"),
   timeout: Duration.seconds(30),
   memorySize: 512,
   environment: {
@@ -50,15 +42,7 @@ const mcpServerLambda = new Function(apiStack, "McpServerFunction", {
 const resourceMetadataLambda = new Function(apiStack, "ResourceMetadataFunction", {
   runtime: Runtime.NODEJS_20_X,
   handler: "resource-metadata-handler.handler",
-  code: Code.fromAsset("amplify/function/mcp-server", {
-    bundling: {
-      image: Runtime.NODEJS_20_X.bundlingImage,
-      command: [
-        'bash', '-c',
-        'npm install && cp -r . /asset-output/'
-      ],
-    },
-  }),
+  code: Code.fromAsset("amplify/function/mcp-server"),
   timeout: Duration.seconds(30),
   memorySize: 512,
   environment: {
@@ -70,15 +54,7 @@ const resourceMetadataLambda = new Function(apiStack, "ResourceMetadataFunction"
 const authorizationServerLambda = new Function(apiStack, "AuthorizationServerFunction", {
   runtime: Runtime.NODEJS_20_X,
   handler: "authorization-server-handler.handler",
-  code: Code.fromAsset("amplify/function/mcp-server", {
-    bundling: {
-      image: Runtime.NODEJS_20_X.bundlingImage,
-      command: [
-        'bash', '-c',
-        'npm install && cp -r . /asset-output/'
-      ],
-    },
-  }),
+  code: Code.fromAsset("amplify/function/mcp-server"),
   timeout: Duration.seconds(30),
   memorySize: 512,
   environment: {
