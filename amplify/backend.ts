@@ -4,10 +4,7 @@ import {
   HttpApi,
   HttpMethod,
 } from "aws-cdk-lib/aws-apigatewayv2";
-import {
-  HttpIamAuthorizer,
-  HttpUserPoolAuthorizer,
-} from "aws-cdk-lib/aws-apigatewayv2-authorizers";
+
 import { HttpLambdaIntegration } from "aws-cdk-lib/aws-apigatewayv2-integrations";
 import { Function, Runtime, Code } from "aws-cdk-lib/aws-lambda";
 import { Duration } from "aws-cdk-lib";
@@ -63,6 +60,41 @@ const authorizationServerLambda = new Function(apiStack, "AuthorizationServerFun
   },
 });
 
+const registerLambda = new Function(apiStack, "RegisterFunction", {
+  runtime: Runtime.NODEJS_20_X,
+  handler: "register-handler.handler",
+  code: Code.fromAsset("amplify/function/mcp-server"),
+  timeout: Duration.seconds(30),
+  memorySize: 512,
+  environment: {
+    COGNITO_USER_POOL_CLIENT_ID: backend.auth.resources.userPoolClient.userPoolClientId,
+  },  
+});
+
+const oauth2AuthorizationLambda = new Function(apiStack, "OAuth2AuthorizationFunction", {
+  runtime: Runtime.NODEJS_20_X,
+  handler: "oauth2-authorization-handler.handler",
+  code: Code.fromAsset("amplify/function/mcp-server"),
+  timeout: Duration.seconds(30),
+  memorySize: 512,
+  environment: {
+    BASE_URL: `https://${apiStack.stackName}.execute-api.ap-northeast-1.amazonaws.com`,
+    COGNITO_DOMAIN: `https://cognito-idp.ap-northeast-1.amazonaws.com/${backend.auth.resources.userPool.userPoolId}`,
+  },
+});
+
+const callbackLambda = new Function(apiStack, "CallbackFunction", {
+  runtime: Runtime.NODEJS_20_X,
+  handler: "callback-handler.handler",
+  code: Code.fromAsset("amplify/function/mcp-server"),
+  timeout: Duration.seconds(30),
+  memorySize: 512,
+  environment: {
+    BASE_URL: `https://${apiStack.stackName}.execute-api.ap-northeast-1.amazonaws.com`,
+  },
+});
+
+
 const httpApi = new HttpApi(apiStack, "HttpApi", {
   apiName: "mcp-server-http",
   corsPreflight: {
@@ -112,6 +144,42 @@ httpApi.addRoutes({
   path: "/.well-known/oauth-authorization-server",
   methods: [HttpMethod.GET],
   integration: httpLambdaIntegrationAuthorizationServer,
+});
+
+// Register(/register)
+const httpLambdaIntegrationRegister = new HttpLambdaIntegration(
+  "LambdaIntegrationRegister",
+  registerLambda
+);
+
+httpApi.addRoutes({
+  path: "/register",
+  methods: [HttpMethod.POST],
+  integration: httpLambdaIntegrationRegister,
+});
+
+// OAuth2 Authorization(/oauth2/authorize)
+const httpLambdaIntegrationOAuth2Authorization = new HttpLambdaIntegration(
+  "LambdaIntegrationOAuth2Authorization",
+  oauth2AuthorizationLambda
+);
+
+httpApi.addRoutes({
+  path: "/oauth2/authorize",
+  methods: [HttpMethod.GET],
+  integration: httpLambdaIntegrationOAuth2Authorization,
+});
+
+// OAuth2 Callback(/oauth2/callback)
+const httpLambdaIntegrationOAuth2Callback = new HttpLambdaIntegration(
+  "LambdaIntegrationOAuth2Callback",
+  callbackLambda
+);
+
+httpApi.addRoutes({
+  path: "/oauth2/callback",
+  methods: [HttpMethod.GET],
+  integration: httpLambdaIntegrationOAuth2Callback,
 });
 
 // Callback(/oauth2/callback)
