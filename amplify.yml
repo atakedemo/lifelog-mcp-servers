@@ -4,17 +4,6 @@ backend:
     build:
       commands:
         - npm ci --cache .npm --prefer-offline
-        - '# Get Cognito information and set environment variables'
-        - |
-          USER_POOL_ID=$(aws cognito-idp list-user-pools --max-items 1 --query 'UserPools[0].Id' --output text)
-          USER_POOL_DOMAIN=$(aws cognito-idp describe-user-pool --user-pool-id $USER_POOL_ID --query 'UserPool.Domain' --output text)
-          REGION=$(aws configure get region)
-          API_STACK_NAME=$(echo $AWS_BRANCH | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')
-          echo "BASE_URL=https://$API_STACK_NAME.execute-api.$REGION.amazonaws.com" >> .env
-          echo "COGNITO_USER_POOL_ID=$USER_POOL_ID" >> .env
-          echo "COGNITO_DOMAIN_URL=https://$USER_POOL_DOMAIN.auth.$REGION.amazoncognito.com" >> .env
-          echo "AUTH_SERVER_URL=https://cognito-idp.$REGION.amazonaws.com/$USER_POOL_ID/.well-known/oauth-authorization-server" >> .env
-        - '# Execute Amplify CLI with the helper script'
         - amplifyPush --simple
 frontend:
   phases:
