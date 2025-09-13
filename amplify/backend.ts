@@ -71,9 +71,13 @@ const userPoolId = backend.auth.resources.userPool.userPoolId;
 const userPoolName = backend.auth.resources.userPool.userPoolProviderName;
 const region = backend.auth.resources.userPool.stack.region;
 
+// Construct API Gateway URL dynamically
+const apiGatewayUrl = `https://${apiStack.stackName}.execute-api.${region}.amazonaws.com`;
+
 console.log('Cognito User Pool ID:', userPoolId);
 console.log('Cognito Name:', userPoolName);
 console.log('Region:', region);
+console.log('API Gateway URL:', apiGatewayUrl);
 
 const httpApi = new HttpApi(apiStack, "HttpApi", {
   apiName: "mcp-server-http",
