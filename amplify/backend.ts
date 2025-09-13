@@ -66,6 +66,15 @@ const backend = defineBackend({
 // create a new API stack
 const apiStack = backend.createStack("api-stack");
 
+// Get Cognito information dynamically for logging/debugging
+const userPoolId = backend.auth.resources.userPool.userPoolId;
+const userPoolName = backend.auth.resources.userPool.userPoolProviderName;
+const region = backend.auth.resources.userPool.stack.region;
+
+console.log('Cognito User Pool ID:', userPoolId);
+console.log('Cognito Name:', userPoolName);
+console.log('Region:', region);
+
 const httpApi = new HttpApi(apiStack, "HttpApi", {
   apiName: "mcp-server-http",
   corsPreflight: {
