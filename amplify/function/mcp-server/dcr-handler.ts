@@ -67,3 +67,8 @@ export class DcrHandler {
     return crypto.randomBytes(32).toString('hex');
   }
 }
+
+// Lambda function entry point
+export const handler = async (event: any) => {
+  return DcrHandler.handle(event, null);
+};

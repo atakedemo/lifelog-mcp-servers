@@ -89,3 +89,8 @@ export class ClientHandler {
     }
   }
 }
+
+// Lambda function entry point
+export const handler = async (event: any) => {
+  return ClientHandler.get(event, null);
+};
