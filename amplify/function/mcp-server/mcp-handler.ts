@@ -84,13 +84,112 @@ export class McpHandler {
 
   private static async processMcpRequest(request: any, client: any) {
     // MCPプロトコルに基づいてリクエストを処理
-    // ここに実際のMCPサーバー実装を追加
+    const { method, params, id } = request;
+
+    try {
+      switch (method) {
+        case 'initialize':
+          return {
+            jsonrpc: '2.0',
+            id,
+            result: {
+              protocolVersion: '2024-11-05',
+              capabilities: {
+                tools: {
+                  listChanged: true
+                }
+              },
+              serverInfo: {
+                name: 'simple-calculator-mcp-server',
+                version: '1.0.0'
+              }
+            }
+          };
+
+        case 'tools/list':
+          return {
+            jsonrpc: '2.0',
+            id,
+            result: {
+              tools: [
+                {
+                  name: 'add_numbers',
+                  description: 'Add two numbers together',
+                  inputSchema: {
+                    type: 'object',
+                    properties: {
+                      a: {
+                        type: 'number',
+                        description: 'First number to add'
+                      },
+                      b: {
+                        type: 'number',
+                        description: 'Second number to add'
+                      }
+                    },
+                    required: ['a', 'b']
+                  }
+                }
+              ]
+            }
+          };
+
+        case 'tools/call':
+          if (params.name === 'add_numbers') {
+            const { a, b } = params.arguments;
+            const result = a + b;
+            
+            return {
+              jsonrpc: '2.0',
+              id,
+              result: {
+                content: [
+                  {
+                    type: 'text',
+                    text: `The result of ${a} + ${b} = ${result}`
+                  }
+                ]
+              }
+            };
+          }
+          break;
+
+        case 'ping':
+          return {
+            jsonrpc: '2.0',
+            id,
+            result: {}
+          };
+
+        default:
+          return {
+            jsonrpc: '2.0',
+            id,
+            error: {
+              code: -32601,
+              message: 'Method not found'
+            }
+          };
+      }
+    } catch (error) {
+      console.error('Error processing MCP request:', error);
+      return {
+        jsonrpc: '2.0',
+        id,
+        error: {
+          code: -32603,
+          message: 'Internal error'
+        }
+      };
+    }
+
+    // Fallback response
     return {
       jsonrpc: '2.0',
-      id: request.id,
+      id,
       result: {
-        // MCPレスポンス
-      },
+        message: 'MCP request processed successfully'
+      }
     };
   }
 }

@@ -50,6 +50,17 @@ const backend = defineBackend({
       AUTH_SERVER_URL: process.env.AUTH_SERVER_URL || '',
     }
   }),
+  oauth2RegistrationFunction: defineFunction({
+    name: 'oauth2-registration',
+    entry: './function/mcp-server/oauth2-register-handler.ts',
+    timeoutSeconds: 30,
+    runtime: 20,
+    memoryMB: 512,
+    environment: {
+      BASE_URL: process.env.BASE_URL || '',
+      COGNITO_USER_POOL_CLIENT_ID: process.env.COGNITO_USER_POOL_CLIENT_ID || '',
+    }
+  }),
   oauth2AuthorizationFunction: defineFunction({
     name: 'oauth2-authorization',
     entry: './function/mcp-server/oauth2-authorization-handler.ts',
@@ -87,6 +98,34 @@ const region = backend.auth.resources.userPool.stack.region;
 
 // Construct API Gateway URL dynamically
 const apiGatewayUrl = `https://${apiStack.stackName}.execute-api.${region}.amazonaws.com`;
+
+// Configure Cognito User Pool Client
+const { cfnResources } = backend.auth.resources;
+const { cfnUserPool, cfnUserPoolClient } = cfnResources;
+
+// Update User Pool Client configuration
+cfnUserPoolClient.addPropertyOverride('ClientName', 'mcp-server-static-client');
+cfnUserPoolClient.addPropertyOverride('GenerateSecret', true);
+cfnUserPoolClient.addPropertyOverride('RefreshTokenValidity', 30);
+cfnUserPoolClient.addPropertyOverride('AllowedOAuthFlows', ['code']);
+cfnUserPoolClient.addPropertyOverride('AllowedOAuthFlowsUserPoolClient', true);
+cfnUserPoolClient.addPropertyOverride('AllowedOAuthScopes', ['openid', 'profile', 'email']);
+cfnUserPoolClient.addPropertyOverride('CallbackURLs', [`${apiGatewayUrl}/oauth2/callback`]);
+cfnUserPoolClient.addPropertyOverride('LogoutURLs', [`${apiGatewayUrl}/logout`]);
+cfnUserPoolClient.addPropertyOverride('SupportedIdentityProviders', ['COGNITO']);
+cfnUserPoolClient.addPropertyOverride('PreventUserExistenceErrors', 'ENABLED');
+cfnUserPoolClient.addPropertyOverride('EnableTokenRevocation', true);
+cfnUserPoolClient.addPropertyOverride('ExplicitAuthFlows', [
+  'ALLOW_REFRESH_TOKEN_AUTH',
+  'ALLOW_USER_SRP_AUTH'
+]);
+cfnUserPoolClient.addPropertyOverride('TokenValidityUnits', {
+  AccessToken: 'hours',
+  IdToken: 'hours',
+  RefreshToken: 'days'
+});
+cfnUserPoolClient.addPropertyOverride('AccessTokenValidity', 1);
+cfnUserPoolClient.addPropertyOverride('IdTokenValidity', 1);
 
 console.log('Cognito User Pool ID:', userPoolId);
 console.log('Cognito Name:', userPoolName);
@@ -144,6 +183,17 @@ httpApi.addRoutes({
   integration: httpLambdaIntegrationAuthorizationServer,
 });
 
+// OAuth2 Registration(/oauth2/register)
+const httpLambdaIntegrationOAuth2Registration = new HttpLambdaIntegration(
+  "LambdaIntegrationOAuth2Registration",
+  backend.oauth2RegistrationFunction.resources.lambda
+);
+
+httpApi.addRoutes({
+  path: "/oauth2/register",
+  methods: [HttpMethod.POST],
+  integration: httpLambdaIntegrationOAuth2Registration,
+});
 
 // OAuth2 Authorization(/oauth2/authorize)
 const httpLambdaIntegrationOAuth2Authorization = new HttpLambdaIntegration(
@@ -180,15 +230,3 @@ httpApi.addRoutes({
   methods: [HttpMethod.POST],
   integration: httpLambdaIntegrationOAuth2Token,
 });
-
-// Callback(/oauth2/callback)
-// const httpLambdaIntegrationCallback = new HttpLambdaIntegration(
-//   "LambdaIntegrationCallback",
-//   backend.callbackFunction.resources.lambda
-// );
-
-// httpApi.addRoutes({
-//   path: "/oauth2/callback",
-//   methods: [HttpMethod.GET],
-//   integration: httpLambdaIntegrationCallback,
-// });
