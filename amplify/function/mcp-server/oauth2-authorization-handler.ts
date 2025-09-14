@@ -1,13 +1,25 @@
 // lambda/oauth2-authorization-handler.ts
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import * as crypto from 'crypto';
 
 export class OAuth2AuthorizationHandler {
     static async handle(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
         try {
             const baseUrl = process.env.BASE_URL || '';
             const cognitoDomain = process.env.COGNITO_DOMAIN || '';
+            const clientSecret = process.env.COGNITO_CLIENT_SECRET || '';
 
             const query = event.queryStringParameters || {};
+            const clientId = query.client_id || '';
+
+            // Calculate SECRET_HASH if client secret is available
+            let secretHash = '';
+            if (clientSecret && clientId) {
+                secretHash = crypto
+                    .createHmac('sha256', clientSecret)
+                    .update(clientId + '6a509ls22ndc8seit9nafit57k') // Use the actual client ID from error
+                    .digest('base64');
+            }
 
             // Store original redirect URI in state
             const proxyState = Buffer.from(
@@ -18,15 +30,22 @@ export class OAuth2AuthorizationHandler {
                 }),
             ).toString('base64');
 
-            const redirectUrl = `${cognitoDomain}/oauth2/authorize?${new URLSearchParams({
+            const params: Record<string, string> = {
                 response_type: 'code',
-                client_id: query.client_id || '',
+                client_id: clientId,
                 redirect_uri: `${baseUrl}/oauth2/callback`,
                 scope: query.scope || 'openid',
                 state: proxyState,
                 code_challenge: query.code_challenge || '',
                 code_challenge_method: 'S256',
-            }).toString()}`;
+            };
+
+            // Add SECRET_HASH if available
+            if (secretHash) {
+                params.secret_hash = secretHash;
+            }
+
+            const redirectUrl = `${cognitoDomain}/oauth2/authorize?${new URLSearchParams(params).toString()}`;
 
             return {
                 statusCode: 302,

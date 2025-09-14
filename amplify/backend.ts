@@ -71,6 +71,7 @@ const backend = defineBackend({
     environment: {
       BASE_URL: process.env.BASE_URL || '',
       COGNITO_DOMAIN: process.env.COGNITO_DOMAIN || '',
+      COGNITO_CLIENT_SECRET: secret('USER_POOL_CLIENT_SECRET'),
     }
   }),
   oauth2CallbackFunction: defineFunction({
@@ -111,7 +112,7 @@ const { cfnUserPool, cfnUserPoolClient } = cfnResources;
 
 // Update User Pool Client configuration
 cfnUserPoolClient.addPropertyOverride('ClientName', 'mcp-server-static-client');
-cfnUserPoolClient.addPropertyOverride('GenerateSecret', true);
+cfnUserPoolClient.addPropertyOverride('GenerateSecret', false);
 cfnUserPoolClient.addPropertyOverride('RefreshTokenValidity', 30);
 cfnUserPoolClient.addPropertyOverride('AllowedOAuthFlows', ['code']);
 cfnUserPoolClient.addPropertyOverride('AllowedOAuthFlowsUserPoolClient', true);
