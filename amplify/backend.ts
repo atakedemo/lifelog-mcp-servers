@@ -61,6 +61,13 @@ const backend = defineBackend({
       COGNITO_DOMAIN: process.env.COGNITO_DOMAIN || '',
     }
   }),
+  oauth2CallbackFunction: defineFunction({
+    name: 'oauth2-callback',
+    entry: './function/mcp-server/oauth2-callback-handler.ts',
+    timeoutSeconds: 30,
+    runtime: 20,
+    memoryMB: 512,
+  }),
 });
 
 // create a new API stack
@@ -141,6 +148,18 @@ httpApi.addRoutes({
   path: "/oauth2/authorize",
   methods: [HttpMethod.GET],
   integration: httpLambdaIntegrationOAuth2Authorization,
+});
+
+// OAuth2 Callback(/oauth2/callback)
+const httpLambdaIntegrationOAuth2Callback = new HttpLambdaIntegration(
+  "LambdaIntegrationOAuth2Callback",
+  backend.oauth2CallbackFunction.resources.lambda
+);
+
+httpApi.addRoutes({
+  path: "/oauth2/callback",
+  methods: [HttpMethod.GET],
+  integration: httpLambdaIntegrationOAuth2Callback,
 });
 
 
