@@ -68,6 +68,13 @@ const backend = defineBackend({
     runtime: 20,
     memoryMB: 512,
   }),
+  oauth2TokenFunction: defineFunction({
+    name: 'oauth2-token',
+    entry: './function/mcp-server/oauth2-token-handler.ts',
+    timeoutSeconds: 30,
+    runtime: 20,
+    memoryMB: 512,
+  }),
 });
 
 // create a new API stack
@@ -162,6 +169,17 @@ httpApi.addRoutes({
   integration: httpLambdaIntegrationOAuth2Callback,
 });
 
+// OAuth2 Token(/oauth2/token)
+const httpLambdaIntegrationOAuth2Token = new HttpLambdaIntegration(
+  "LambdaIntegrationOAuth2Token",
+  backend.oauth2TokenFunction.resources.lambda
+);
+
+httpApi.addRoutes({
+  path: "/oauth2/token",
+  methods: [HttpMethod.POST],
+  integration: httpLambdaIntegrationOAuth2Token,
+});
 
 // Callback(/oauth2/callback)
 // const httpLambdaIntegrationCallback = new HttpLambdaIntegration(
