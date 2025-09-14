@@ -6,6 +6,7 @@ export class OAuth2TokenHandler {
         try {
             const baseUrl = process.env.BASE_URL || '';
             const cognitoClientId = process.env.COGNITO_CLIENT_ID || '';
+            const cognitoClientSecret = process.env.COGNITO_CLIENT_SECRET || '';
             const requestBody = JSON.parse(event.body || '{}');
             let cognitoRequestBody = {};
             
@@ -15,6 +16,7 @@ export class OAuth2TokenHandler {
                     code: requestBody.code,
                     redirect_uri: baseUrl + '/oauth2/callback',
                     client_id: cognitoClientId,
+                    client_secret: cognitoClientSecret,
                     code_verifier: requestBody.code_verifier,
                 };
             } else {

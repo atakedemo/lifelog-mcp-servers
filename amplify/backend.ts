@@ -86,6 +86,11 @@ const backend = defineBackend({
     timeoutSeconds: 30,
     runtime: 20,
     memoryMB: 512,
+    environment: {
+      BASE_URL: process.env.BASE_URL || '',
+      COGNITO_CLIENT_ID: process.env.COGNITO_CLIENT_ID || '',
+      COGNITO_CLIENT_SECRET: secret('USER_POOL_CLIENT_SECRET') || '',
+    }
   }),
 });
 
