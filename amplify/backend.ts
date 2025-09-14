@@ -6,15 +6,15 @@ import {
 } from "aws-cdk-lib/aws-apigatewayv2";
 
 import { HttpLambdaIntegration } from "aws-cdk-lib/aws-apigatewayv2-integrations";
-import { defineFunction } from '@aws-amplify/backend';
 
+import { defineFunction, secret } from '@aws-amplify/backend';
 import { auth } from './auth/resource';
 import { data } from './data/resource';
 
 /**
  * @see https://docs.amplify.aws/react/build-a-backend/ to add storage, functions, and more
  */
-
+// const cognitoClientSecret = defineSecret('USER_POOL_CLIENT_SECRET');
 const backend = defineBackend({
   auth,
   data,
@@ -59,6 +59,7 @@ const backend = defineBackend({
     environment: {
       BASE_URL: process.env.BASE_URL || '',
       COGNITO_USER_POOL_CLIENT_ID: process.env.COGNITO_USER_POOL_CLIENT_ID || '',
+      COGNITO_CLIENT_SECRET: secret('USER_POOL_CLIENT_SECRET') || '',
     }
   }),
   oauth2AuthorizationFunction: defineFunction({

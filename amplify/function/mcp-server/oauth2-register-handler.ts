@@ -1,7 +1,5 @@
 // lambda/register-handler.ts
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';// import { config } from '../config/';
-import { generateClient } from 'aws-amplify/api';
-import { v4 as uuidv4 } from 'uuid';
 import * as crypto from 'crypto';
 
 export class RegisterHandler {
@@ -9,7 +7,7 @@ export class RegisterHandler {
         try {
             const requestBody = JSON.parse(event.body || '{}');
             const cognitoUserPoolClientId = process.env.COGNITO_USER_POOL_CLIENT_ID || '';
-            const clientSecret = this.generateClientSecret();
+            const clientSecret = process.env.COGNITO_CLIENT_SECRET || '';
           
             const response = {
                 client_id: cognitoUserPoolClientId,
@@ -43,10 +41,6 @@ export class RegisterHandler {
               body: JSON.stringify({ error: 'Internal Server Error' }),
             };
         }
-    }
-
-    private static generateClientSecret(): string {
-        return crypto.randomBytes(32).toString('hex');
     }
 }
 // Lambda function entry point
